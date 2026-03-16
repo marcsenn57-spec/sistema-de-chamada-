@@ -2,43 +2,37 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Controle de Sala - Inteligente</title>
+    <title>USF HUMBERTO VIEIRA</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; padding: 40px; }
-        .box { background: #34495e; padding: 30px; border-radius: 12px; width: 350px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        label { font-size: 0.9rem; color: #bdc3c7; }
-        input { padding: 12px; font-size: 1.1rem; border-radius: 6px; border: none; }
-        button { padding: 15px; font-size: 1.1rem; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: 0.2s; }
+        body { font-family: sans-serif; background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .box { background: #34495e; padding: 25px; border-radius: 10px; display: flex; flex-direction: column; gap: 15px; width: 350px; }
+        input { padding: 12px; font-size: 1.1rem; border-radius: 5px; border: none; }
+        button { padding: 15px; font-size: 1.1rem; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; transition: 0.2s; }
         .btn-chamar { background: #27ae60; color: white; }
         .btn-chamar:hover { background: #2ecc71; }
-        .btn-repetir { background: #f39c12; color: white; margin-top: 5px; }
-        .status-dia { font-size: 0.8rem; text-align: center; color: #95a5a6; margin-top: 15px; }
+        .btn-repetir { background: #f39c12; color: white; }
+        .btn-reset { background:none; color:#e74c3c; font-size:0.7rem; cursor:pointer; border:1px solid #e74c3c; padding:5px; margin-top:10px;}
     </style>
 </head>
 <body>
-
-    <h2>CONTROLE DE SALA</h2>
-    
+    <h1>CONTROLE DE CHAMADA</h1>
     <div class="box">
-        <label>NÚMERO DA SALA</label>
-        <input type="number" id="sala" value="1" min="1">
-
-        <label>NOME DO PACIENTE</label>
-        <input type="text" id="nome" placeholder="Nome completo..." autocomplete="off">
-
+        <label>Número da Sala:</label>
+        <input type="number" id="sala" value="1">
+        
+        <label>Nome do Paciente:</label>
+        <input type="text" id="nome" placeholder="Digite o nome...">
+        
         <button class="btn-chamar" onclick="enviar(true)">CHAMAR PRÓXIMO</button>
-        <button class="btn-repetir" onclick="enviar(false)">REPETIR CHAMADA</button>
-
-        <div id="status-dia" class="status-dia">Iniciando sistema...</div>
-        <button onclick="resetarManual()" style="background:none; color:#e74c3c; font-size:0.7rem; cursor:pointer; border:1px solid #e74c3c; padding:5px; margin-top:10px;">Zerar Manualmente</button>
-    </div>
+        <button class="btn-repetir" onclick="enviar(false)">REPETIR ATUAL</button>
+        <button class="btn-reset" onclick="resetarTudo()">ZERAR TUDO (NOVO DIA)</button>
+           </div>
 
     <script>
-        // CONFIGURAÇÃO DO FIREBASE (Coloque seus dados aqui)
-        const firebaseConfig = {
-             apiKey: "AIzaSyAni301REp5IfvRTxxHLxCFWkdPr8Qrt68",
+        const firebaseConfig = { 
+           apiKey: "AIzaSyAni301REp5IfvRTxxHLxCFWkdPr8Qrt68",
   authDomain: "painel-de-senhas-23.firebaseapp.com",
   databaseURL: "https://painel-de-senhas-23-default-rtdb.firebaseio.com",
   projectId: "painel-de-senhas-23",
@@ -46,67 +40,47 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Variáveis de controle
-        let contador = parseInt(localStorage.getItem('contadorSenhas')) || 0;
-        let dataUltimoAcesso = localStorage.getItem('dataSistema');
-
-        // FUNÇÃO DE VERIFICAÇÃO DE DATA (RESET AUTOMÁTICO)
-        function verificarNovoDia() {
-            const hoje = new Date().toLocaleDateString(); // Ex: "06/03/2024"
-            
-            if (dataUltimoAcesso !== hoje) {
-                // É um novo dia! Resetar tudo.
-                contador = 0;
-                localStorage.setItem('contadorSenhas', 0);
-                localStorage.setItem('dataSistema', hoje);
-                dataUltimoAcesso = hoje;
-                console.log("Sistema resetado para um novo dia: " + hoje);
-            }
-            document.getElementById('status-dia').innerText = "Data: " + hoje + " | Senhas hoje: " + contador;
-        }
-
-        function enviar(eNovo) {
-            verificarNovoDia(); // Verifica se o dia mudou antes de cada chamada
-
-            const sala = document.getElementById('sala').value;
+        function enviar(novo) {
+            const salaInput = document.getElementById('sala').value;
             const nomeInput = document.getElementById('nome');
+            let nomeParaChamar = nomeInput.value.toUpperCase();
             
-            if (eNovo) {
-                if (!nomeInput.value.trim()) { alert("Digite o nome do paciente!"); return; }
-                contador++;
-                localStorage.setItem('contadorSenhas', contador);
-                nomeInput.dataset.ultimoNome = nomeInput.value.toUpperCase();
+            let chaveSala = 'cont_sala_' + salaInput;
+            let contadorDaSala = parseInt(localStorage.getItem(chaveSala)) || 0;
+
+            if (novo) {
+                if (!nomeParaChamar) return alert("Digite o nome do paciente");
+                contadorDaSala++;
+                localStorage.setItem(chaveSala, contadorDaSala);
+                
+                nomeInput.dataset.ultimoNome = nomeParaChamar;
+                nomeInput.dataset.ultimaSenha = contadorDaSala;
+                nomeInput.value = ""; 
+            } else {
+                nomeParaChamar = nomeInput.dataset.ultimoNome;
+                contadorDaSala = nomeInput.dataset.ultimaSenha;
+                if (!nomeParaChamar) return alert("Não há chamada para repetir!");
             }
 
-            const nomeParaEnviar = eNovo ? nomeInput.value.toUpperCase() : nomeInput.dataset.ultimoNome;
-            const senhaParaEnviar = `N-${String(contador).padStart(3, '0')}`;
-
-            // Envia para o Firebase (A TV vai ler isso)
             db.ref('chamada').set({
-                nome: nomeParaEnviar,
-                sala: sala,
-                senha: senhaParaEnviar,
+                nome: nomeParaChamar,
+                sala: salaInput,
+                senha: `${String(contadorDaSala).padStart(3, '0')}`,
                 timestamp: Date.now()
             });
-
-            if (eNovo) {
-                nomeInput.value = "";
-                nomeInput.focus();
-            }
-            verificarNovoDia();
         }
 
-        function resetarManual() {
-            if(confirm("Deseja zerar as senhas agora?")) {
-                contador = 0;
-                localStorage.setItem('contadorSenhas', 0);
-                verificarNovoDia();
-                alert("Contador reiniciado!");
+        function resetarTudo() {
+            if (confirm("Isso voltará todas as salas para a senha 001 e limpará a TV. Confirma?")) {
+                localStorage.clear();
+                db.ref('chamada').set({
+                    nome: "AGUARDANDO...",
+                    sala: "--",
+                    senha: "---",
+                    timestamp: Date.now()
+                }).then(() => location.reload());
             }
         }
-
-        // Executa ao abrir a página
-        verificarNovoDia();
     </script>
 </body>
 </html>
